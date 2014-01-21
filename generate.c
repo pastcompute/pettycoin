@@ -339,6 +339,10 @@ int main(int argc, char *argv[])
 	struct protocol_double_sha prev_hash;
 	u8 *prev_merkles;
 	u32 difficulty, num_prev_merkles;
+	int async_flag = 0;
+#ifdef O_ASYNC /* we do appear able to operate on some exotic platforms without this */
+	async_flag = O_ASYNC;
+#endif
 
 	err_set_progname(argv[0]);
 
@@ -378,7 +382,7 @@ int main(int argc, char *argv[])
 	if (fcntl(STDIN_FILENO, F_SETOWN, getpid()) != 0)
 		err(1, "Setting F_SETOWN on stdin");
 	if (fcntl(STDIN_FILENO, F_SETFL,
-		  fcntl(STDIN_FILENO, F_GETFL)|O_ASYNC|O_NONBLOCK) != 0)
+		  fcntl(STDIN_FILENO, F_GETFL)|async_flag|O_NONBLOCK) != 0)
 		err(1, "Setting O_ASYNC and O_NONBLOCK on stdin");
 
 	do {
