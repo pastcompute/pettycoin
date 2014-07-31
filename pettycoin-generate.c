@@ -27,18 +27,23 @@
 #include <ccan/tal/tal.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef __CYGWIN__
+#include <poll.h>
+#endif
 #include <signal.h>
 #include <stdio.h>
 #include <sys/select.h>
 #include <time.h>
 #include <unistd.h>
 
+#ifndef __CYGWIN__
 static volatile bool input = true;
 
 static void input_ready(int signum)
 {
 	input = true;
 }
+#endif
 
 static bool valid_difficulty(u32 difficulty)
 {
@@ -372,19 +377,31 @@ int main(int argc, char *argv[])
 		update_partial_hash(w);
 	}
 
+#ifdef __CYGWIN__
+	do {
+        struct pollfd fds[1] = { { STDIN_FILENO, POLLIN, 0 } };
+        int er = poll( fds, 1, 0);
+        if (er > 0) {
+			read_txs(w);
+		} else if (er < 0) {
+            perror("poll");
+        }
+	} while (!solve_block(w));
+
+#else 
 	signal(SIGIO, input_ready);
 	if (fcntl(STDIN_FILENO, F_SETOWN, getpid()) != 0)
 		err(1, "Setting F_SETOWN on stdin");
 	if (fcntl(STDIN_FILENO, F_SETFL,
 		  fcntl(STDIN_FILENO, F_GETFL)|O_ASYNC|O_NONBLOCK) != 0)
 		err(1, "Setting O_ASYNC and O_NONBLOCK on stdin");
-
 	do {
 		if (input) {
 			input = false;
 			read_txs(w);
 		}
 	} while (!solve_block(w));
+#endif
 
 	write_block(STDOUT_FILENO, w);
 

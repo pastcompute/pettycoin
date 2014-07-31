@@ -5,10 +5,14 @@ CCANDIR := ../ccan/
 BASECFLAGS := -ggdb -I $(CCANDIR) -Wall -DFASTCHECK
 CFLAGS := -MMD $(BASECFLAGS)
 LDLIBS := -lcrypto -lrt
-CCAN_OBJS := ccan-noerr.o ccan-tal.o ccan-take.o ccan-list.o ccan-read_write_all.o ccan-htable.o ccan-isaac64.o ccan-tal-str.o ccan-str.o ccan-time.o ccan-strmap.o ccan-hash.o ccan-io-io.o ccan-io-poll.o ccan-timer.o
+CCAN_OBJS := ccan-asort.o ccan-noerr.o ccan-tal.o ccan-take.o ccan-list.o ccan-read_write_all.o ccan-htable.o ccan-isaac64.o ccan-tal-str.o ccan-str.o ccan-time.o ccan-strmap.o ccan-hash.o ccan-io-io.o ccan-io-poll.o ccan-timer.o
 HELPER_OBJS := $(HELPERS:.c=.o)
 
 VALGRIND=valgrind -q --error-exitcode=99 --track-origins=yes --leak-check=full --show-reachable=yes --suppressions=vg-suppressions
+
+ifeq ($(shell uname),CYGWIN_NT-6.1)
+VALGRIND=
+endif
 
 check: $(BINS)
 	set -e; for b in $(BINS); do printf "[TEST] %-48s" $$b ; $(VALGRIND) ./$$b; echo OK ; done
@@ -68,6 +72,8 @@ ccan-io-io.o: $(CCANDIR)/ccan/io/io.c
 ccan-io-poll.o: $(CCANDIR)/ccan/io/poll.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 ccan-timer.o: $(CCANDIR)/ccan/timer/timer.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+ccan-asort.o: $(CCANDIR)/ccan/asort/asort.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
